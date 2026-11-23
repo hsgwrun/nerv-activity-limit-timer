@@ -78,7 +78,7 @@ app.innerHTML = `
           <div class="board-main">
             <div class="board-digits">
               <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
-              <h2 id="limit-heading" class="limit-value"><span id="activity-time-value">00:00:00.00</span></h2>
+              <div id="limit-heading" class="segment-display" role="img" aria-label="予想活動限界時間"><span id="activity-time-value" class="segment-readout">00:00:00.00</span></div>
               <div class="countdown-meta"><span id="countdown-status">放電換算 / INTERNAL POWER</span><span id="countdown-source">ESTIMATED</span></div>
               <div class="countdown" id="countdown">00:00:00</div>
               <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
@@ -277,6 +277,42 @@ function formatActivityTime(seconds) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
 }
 
+const SEGMENT_MAP = {
+  '0': 'abcdef', '1': 'bc', '2': 'abdeg', '3': 'abcdg', '4': 'bcfg',
+  '5': 'acdfg', '6': 'acdefg', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg',
+};
+
+function updateSegmentDisplay(target, value) {
+  const text = String(value);
+  const structure = text.replace(/\\./g, '');
+  if (!target.dataset.segmentReady || target.dataset.segmentStructure !== structure.replace(/\\d/g, '0')) {
+    target.innerHTML = structure.split('').map((char) => {
+      if (char === ':') return '<span class="segment-colon" aria-hidden="true"><i></i><i></i></span>';
+      return `<span class="segment-digit" aria-hidden="true">${'abcdefgdp'.split('').map((name) => `<i class="segment seg-${name}" data-segment="${name}"></i>`).join('')}</span>`;
+    }).join('');
+    target.dataset.segmentReady = 'true';
+    target.dataset.segmentStructure = structure.replace(/\\d/g, '0');
+  }
+
+  const digits = [...target.querySelectorAll('.segment-digit')];
+  let digitIndex = 0;
+  let decimalAfter = -1;
+  for (const char of text) {
+    if (char === '.') {
+      decimalAfter = digitIndex - 1;
+    } else if (/\\d/.test(char)) {
+      const digit = digits[digitIndex++];
+      const lit = SEGMENT_MAP[char] || '';
+      digit.querySelectorAll('.segment').forEach((segment) => {
+        const name = segment.dataset.segment;
+        segment.classList.toggle('is-lit', name === 'dp' ? decimalAfter === digitIndex - 1 : lit.includes(name));
+      });
+      digit.dataset.value = char;
+    }
+  }
+  target.setAttribute('aria-label', `予想活動限界時間 ${text}`);
+}
+
 function formatDuration(seconds) {
   if (!finitePositive(seconds)) return '—';
   const hours = Math.floor(seconds / 3600);
@@ -336,7 +372,7 @@ function render() {
   const powerMode = state.charging ? 'external' : 'internal';
   const ringColor = level <= 15 ? '#ff3f3f' : level <= 35 ? '#f7b955' : '#ff5b55';
 
-  refs.activityTime.textContent = formatActivityTime(state.remainingSeconds);
+  updateSegmentDisplay(refs.activityTime, formatActivityTime(state.remainingSeconds));
   refs.countdown.textContent = formatActivityTime(state.remainingSeconds);
   refs.countdownStatus.textContent = state.charging ? '外部電力 / EXTERNAL POWER' : state.lowPowerMode ? '低電力モード / LOW POWER' : '内部電力 / INTERNAL POWER';
   refs.countdownSource.textContent = state.source === 'battery-api' ? 'BATTERY API' : 'MANUAL ESTIMATE';
@@ -449,7 +485,7 @@ async function connectBattery() {
 function tick() {
   if (state.deadlineMs) state.remainingSeconds = Math.max(0, (state.deadlineMs - Date.now()) / 1000);
   const alert = getAlertLevel();
-  refs.activityTime.textContent = formatActivityTime(state.remainingSeconds);
+  updateSegmentDisplay(refs.activityTime, formatActivityTime(state.remainingSeconds));
   refs.countdown.textContent = formatActivityTime(state.remainingSeconds);
   refs.countdownProgress.style.width = `${clamp((state.remainingSeconds / Math.max(state.initialSeconds, 1)) * 100, 0, 100)}%`;
   refs.alertTitle.textContent = alert.title;
