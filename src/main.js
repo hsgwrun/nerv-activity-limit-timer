@@ -76,7 +76,7 @@ app.innerHTML = `
           <div class="board-main">
             <div class="board-digits">
               <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
-              <h2 id="limit-heading" class="limit-value"><span id="hours-value">0.000</span><small>H</small></h2>
+              <h2 id="limit-heading" class="limit-value"><span id="hours-value">0.00</span><small>H</small></h2>
               <div class="countdown" id="countdown">00:00:00</div>
               <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
             </div>
@@ -315,7 +315,7 @@ function render() {
   const confidence = deriveConfidence();
   const ringColor = level <= 15 ? '#ff3f3f' : level <= 35 ? '#f7b955' : '#ff5b55';
 
-  refs.hours.textContent = state.estimatedHours.toFixed(3);
+  refs.hours.textContent = state.estimatedHours.toFixed(2);
   refs.countdown.textContent = formatTime(state.remainingSeconds);
   refs.countdownStatus.textContent = state.charging ? '充電中 / 放電換算' : '放電換算 / ACTIVE';
   refs.powerSourceChip.textContent = state.charging ? '外部電力 / EXTERNAL' : '内部電力 / INTERNAL';
