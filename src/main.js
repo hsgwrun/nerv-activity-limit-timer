@@ -2,8 +2,8 @@ import './style.css';
 
 const DEFAULTS = {
   level: 62,
-  capacity: 58,
-  power: 8.5,
+  capacity: 18,
+  power: 4.5,
   profile: 'mobile',
 };
 
@@ -341,6 +341,8 @@ function applyBatteryData(battery) {
     state.power = profiles[state.profile].power;
   }
   refs.levelInput.value = state.level;
+  refs.capacityInput.value = state.capacity;
+  refs.powerInput.value = state.power;
   calculate();
   setAnnouncer(`Battery Status APIに接続しました。バッテリー残量は${state.level}%です。`);
 }
