@@ -19,6 +19,7 @@ const state = {
   chargingTime: null,
   remainingSeconds: 0,
   estimatedHours: 0,
+  deadlineMs: null,
   lastUpdated: null,
   battery: null,
   timerId: null,
@@ -76,7 +77,7 @@ app.innerHTML = `
           <div class="board-main">
             <div class="board-digits">
               <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
-              <h2 id="limit-heading" class="limit-value"><span id="hours-value">0.00</span><small>H</small></h2>
+              <h2 id="limit-heading" class="limit-value"><span id="activity-time-value">00時間00分00秒00</span></h2>
               <div class="countdown" id="countdown">00:00:00</div>
               <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
             </div>
@@ -210,7 +211,7 @@ const refs = {
   alertDetail: document.querySelector('#alert-detail'),
   powerSourceChip: document.querySelector('#power-source-chip'),
   speedItems: document.querySelectorAll('[data-speed]'),
-  hours: document.querySelector('#hours-value'),
+  activityTime: document.querySelector('#activity-time-value'),
   countdown: document.querySelector('#countdown'),
   countdownStatus: document.querySelector('#countdown-status'),
   countdownProgress: document.querySelector('#countdown-progress'),
@@ -260,6 +261,15 @@ function formatTime(seconds) {
   return [hours, minutes, secs].map((item) => String(item).padStart(2, '0')).join(':');
 }
 
+function formatActivityTime(seconds) {
+  const safe = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const wholeSeconds = Math.floor(safe % 60);
+  const hundredths = Math.floor((safe - Math.floor(safe)) * 100);
+  return `${String(hours).padStart(2, '0')}時間${String(minutes).padStart(2, '0')}分${String(wholeSeconds).padStart(2, '0')}秒${String(hundredths).padStart(2, '0')}`;
+}
+
 function formatDuration(seconds) {
   if (!finitePositive(seconds)) return '—';
   const hours = Math.floor(seconds / 3600);
@@ -287,6 +297,7 @@ function calculate() {
   const seconds = hasApiTime ? apiTime : calculateManualSeconds();
   state.remainingSeconds = seconds;
   state.estimatedHours = seconds / 3600;
+  state.deadlineMs = Date.now() + (seconds * 1000);
   state.lastUpdated = Date.now();
   render();
 }
@@ -315,8 +326,8 @@ function render() {
   const confidence = deriveConfidence();
   const ringColor = level <= 15 ? '#ff3f3f' : level <= 35 ? '#f7b955' : '#ff5b55';
 
-  refs.hours.textContent = state.estimatedHours.toFixed(2);
-  refs.countdown.textContent = formatTime(state.remainingSeconds);
+  refs.activityTime.textContent = formatActivityTime(state.remainingSeconds);
+  refs.countdown.textContent = formatActivityTime(state.remainingSeconds);
   refs.countdownStatus.textContent = state.charging ? '充電中 / 放電換算' : '放電換算 / ACTIVE';
   refs.powerSourceChip.textContent = state.charging ? '外部電力 / EXTERNAL' : '内部電力 / INTERNAL';
   refs.level.textContent = Math.round(level);
@@ -416,9 +427,10 @@ async function connectBattery() {
 }
 
 function tick() {
-  if (state.remainingSeconds > 0) state.remainingSeconds = Math.max(0, state.remainingSeconds - 1);
+  if (state.deadlineMs) state.remainingSeconds = Math.max(0, (state.deadlineMs - Date.now()) / 1000);
   const alert = getAlertLevel();
-  refs.countdown.textContent = formatTime(state.remainingSeconds);
+  refs.activityTime.textContent = formatActivityTime(state.remainingSeconds);
+  refs.countdown.textContent = formatActivityTime(state.remainingSeconds);
   refs.alertTitle.textContent = alert.title;
   refs.alertDetail.textContent = alert.detail;
   document.body.dataset.alert = alert.className;
@@ -436,7 +448,7 @@ setInterval(() => {
   refs.topClock.textContent = nowLabel();
 }, 1000);
 
-state.timerId = setInterval(tick, 1000);
+state.timerId = setInterval(tick, 50);
 refs.topClock.textContent = nowLabel();
 refs.profile.value = DEFAULTS.profile;
 refs.levelInput.value = DEFAULTS.level;
