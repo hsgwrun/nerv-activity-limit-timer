@@ -124,7 +124,7 @@ h1 { margin: 4px 0 0; color: var(--cream); font: 700 clamp(20px, 3vw, 31px)/1 va
 .ghost-button { flex: none; color: var(--cream); background: transparent; border: 1px solid var(--line); padding: 10px 13px; font: 500 10px var(--mono); letter-spacing: .06em; transition: border-color .2s, background .2s; }
 .ghost-button:hover, .ghost-button:focus-visible { border-color: var(--red); background: rgba(255, 91, 85, .1); outline: none; }
 .ghost-button span { color: var(--red); margin-left: 8px; }
-.manual-form { display: grid; grid-template-columns: 1.15fr repeat(3, 1fr); gap: 12px; padding: 0 26px; }
+.manual-form { display: grid; grid-template-columns: 1.15fr 1.35fr repeat(3, 1fr); gap: 12px; padding: 0 26px; }
 .manual-form label { display: block; }
 .manual-form label > span { display: block; margin: 0 0 7px; color: var(--muted); font: 500 10px var(--mono); }
 .manual-form em { color: var(--red); font-style: normal; }
@@ -178,4 +178,45 @@ body[data-alert="warning"] .alert-icon { background: var(--amber); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+/* Front-facing power supply board: the mode is intentionally impossible to miss. */
+body { --mode-color: #ff5b55; --mode-deep: #451518; --mode-glow: rgba(255, 63, 63, .16); }
+body[data-power-mode="external"] { --mode-color: #ffc928; --mode-deep: #604300; --mode-glow: rgba(255, 201, 40, .18); }
+
+.alert-right { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+.power-source-chip { padding: 7px 10px; color: var(--mode-color); border: 1px solid var(--mode-color); background: var(--mode-glow); font: 700 10px var(--mono); letter-spacing: .08em; white-space: nowrap; }
+
+.mode-banner { display: flex; align-items: stretch; justify-content: space-between; gap: 18px; margin: 22px 7vw 0; border: 2px solid var(--mode-color); background: #050708; box-shadow: 0 0 28px var(--mode-glow), inset 0 0 24px var(--mode-glow); }
+.mode-banner-title { display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0; padding: 16px 19px; border-right: 1px solid var(--mode-color); }
+.mode-kicker { color: var(--mode-color); font: 600 9px var(--mono); letter-spacing: .12em; }
+.mode-banner-title strong { color: var(--mode-color); font: 900 clamp(24px, 3vw, 42px)/1 var(--sans); letter-spacing: .12em; }
+.mode-banner-state { min-width: 180px; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 14px 18px; text-align: right; }
+.mode-banner-state span { color: var(--mode-color); font: 700 clamp(20px, 2.4vw, 32px)/1 var(--mono); letter-spacing: .04em; }
+.mode-banner-state small { color: var(--cream); font: 500 10px var(--mono); }
+
+.hero-panel { border-color: var(--mode-color); box-shadow: 0 0 26px var(--mode-glow); }
+.hero-copy { padding-top: 34px; }
+.limit-value { color: var(--mode-color); text-shadow: 0 0 34px var(--mode-glow); }
+.countdown { color: var(--mode-color); text-shadow: 0 0 22px var(--mode-glow); }
+.countdown-bar { background: var(--mode-deep); }
+.countdown-bar span { background: var(--mode-color); }
+.countdown-label span:last-child { color: var(--mode-color); }
+.warning-chip { color: var(--mode-color); }
+
+body[data-power-mode="external"] .mode-banner { background: linear-gradient(90deg, rgba(87, 58, 0, .56), #050708 70%); }
+body[data-power-mode="external"] .mode-banner-title strong::before { content: '▲ '; font-size: .6em; }
+body[data-power-mode="internal"] .mode-banner { background: linear-gradient(90deg, rgba(77, 14, 19, .6), #050708 70%); }
+body[data-power-mode="internal"] .mode-banner-title strong::before { content: '▰ '; font-size: .55em; }
+
+@media (max-width: 620px) {
+  .alert-right { width: 100%; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .alert-detail { text-align: right; }
+  .mode-banner { margin-left: 22px; margin-right: 22px; gap: 0; }
+  .mode-banner-title { padding: 13px 12px; }
+  .mode-banner-title strong { font-size: 22px; }
+  .mode-banner-state { min-width: 120px; padding: 12px 10px; }
+  .mode-banner-state span { font-size: 18px; }
+  .mode-banner-state small { font-size: 8px; }
+  .hero-copy { padding-top: 28px; }
 }

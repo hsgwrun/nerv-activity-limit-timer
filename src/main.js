@@ -51,7 +51,10 @@ app.innerHTML = `
           <strong id="alert-title">STANDBY / CALCULATING</strong>
         </div>
       </div>
-      <span class="alert-detail" id="alert-detail">端末状態の同期を待機中</span>
+      <div class="alert-right">
+        <span class="power-source-chip" id="power-source-chip">内部電力 / INTERNAL</span>
+        <span class="alert-detail" id="alert-detail">端末状態の同期を待機中</span>
+      </div>
     </section>
 
     <div class="dashboard-grid">
@@ -64,8 +67,19 @@ app.innerHTML = `
           <span class="live-tag"><span class="live-dot"></span>LIVE</span>
         </div>
 
+        <div class="mode-banner" aria-live="polite">
+          <div class="mode-banner-title">
+            <span class="mode-kicker">MAIN ENERGY SUPPLY SYSTEM</span>
+            <strong id="mode-label">内部電力</strong>
+          </div>
+          <div class="mode-banner-state">
+            <span id="mode-en">INTERNAL</span>
+            <small id="mode-note">端末バッテリーで稼働中</small>
+          </div>
+        </div>
+
         <div class="hero-copy">
-          <p class="hero-kicker">予想活動限界時間</p>
+          <p class="hero-kicker">ACTIVE TIME REMAINING / 予想活動限界時間</p>
           <h2 id="limit-heading" class="limit-value"><span id="hours-value">0.000</span><small>H</small></h2>
           <p class="hero-subline">現在の消費電力が継続すると仮定した場合</p>
         </div>
@@ -147,6 +161,13 @@ app.innerHTML = `
           </select>
         </label>
         <label>
+          <span>電力モード</span>
+          <select id="power-mode-input" name="powerMode">
+            <option value="internal">内部電力 / INTERNAL</option>
+            <option value="external">外部電力 / EXTERNAL</option>
+          </select>
+        </label>
+        <label>
           <span>現在の残量 <em>%</em></span>
           <input id="level-input" name="level" type="number" min="0" max="100" step="1" value="62" inputmode="decimal" />
         </label>
@@ -181,9 +202,13 @@ const refs = {
   topClock: document.querySelector('#top-clock'),
   alertTitle: document.querySelector('#alert-title'),
   alertDetail: document.querySelector('#alert-detail'),
+  powerSourceChip: document.querySelector('#power-source-chip'),
   hours: document.querySelector('#hours-value'),
   countdown: document.querySelector('#countdown'),
   countdownStatus: document.querySelector('#countdown-status'),
+  modeLabel: document.querySelector('#mode-label'),
+  modeEn: document.querySelector('#mode-en'),
+  modeNote: document.querySelector('#mode-note'),
   countdownProgress: document.querySelector('#countdown-progress'),
   level: document.querySelector('#level-value'),
   ring: document.querySelector('#battery-ring'),
@@ -201,6 +226,7 @@ const refs = {
   statusAnnouncer: document.querySelector('#status-announcer'),
   form: document.querySelector('#manual-form'),
   profile: document.querySelector('#profile-input'),
+  powerMode: document.querySelector('#power-mode-input'),
   levelInput: document.querySelector('#level-input'),
   capacityInput: document.querySelector('#capacity-input'),
   powerInput: document.querySelector('#power-input'),
@@ -282,6 +308,10 @@ function render() {
   refs.hours.textContent = state.estimatedHours.toFixed(3);
   refs.countdown.textContent = formatTime(state.remainingSeconds);
   refs.countdownStatus.textContent = state.charging ? '充電中 / 放電換算' : '放電換算 / ACTIVE';
+  refs.modeLabel.textContent = state.charging ? '外部電力' : '内部電力';
+  refs.modeEn.textContent = state.charging ? 'EXTERNAL' : 'INTERNAL';
+  refs.modeNote.textContent = state.charging ? '外部電力供給 / 充電中' : '端末バッテリーで稼働中';
+  refs.powerSourceChip.textContent = state.charging ? '外部電力 / EXTERNAL' : '内部電力 / INTERNAL';
   refs.level.textContent = Math.round(level);
   refs.ring.setAttribute('aria-label', `バッテリー残量 ${Math.round(level)}パーセント`);
   refs.ring.style.setProperty('--level', `${level * 3.6}deg`);
@@ -302,6 +332,7 @@ function render() {
   refs.countdownProgress.style.width = `${clamp((state.remainingSeconds / Math.max(state.estimatedHours * 3600, 1)) * 100, 0, 100)}%`;
 
   document.body.dataset.alert = alert.className;
+  document.body.dataset.powerMode = state.charging ? 'external' : 'internal';
 }
 
 function readManualInputs() {
@@ -314,6 +345,7 @@ function readManualInputs() {
   state.power = power;
   state.profile = refs.profile.value;
   state.source = state.apiAvailable ? 'battery-api' : 'manual';
+  if (!state.apiAvailable) state.charging = refs.powerMode.value === 'external';
   if (state.apiAvailable && state.battery) {
     state.level = Math.round(state.battery.level * 100);
   }
@@ -334,6 +366,7 @@ function applyBatteryData(battery) {
   state.source = 'battery-api';
   state.level = Math.round(battery.level * 100);
   state.charging = Boolean(battery.charging);
+  refs.powerMode.value = state.charging ? 'external' : 'internal';
   state.apiDischargingTime = finitePositive(battery.dischargingTime) ? battery.dischargingTime : null;
   state.chargingTime = finitePositive(battery.chargingTime) ? battery.chargingTime : null;
   if (state.profile !== 'custom') {
@@ -354,7 +387,7 @@ async function connectBattery() {
     state.level = Number(refs.levelInput.value) || DEFAULTS.level;
     state.capacity = Number(refs.capacityInput.value) || DEFAULTS.capacity;
     state.power = Number(refs.powerInput.value) || DEFAULTS.power;
-    state.charging = false;
+    state.charging = refs.powerMode.value === 'external';
     calculate();
     setAnnouncer('Battery Status APIは利用できないため、手動入力モードで動作しています。');
     return;
@@ -382,6 +415,7 @@ function tick() {
 }
 
 refs.form.addEventListener('input', readManualInputs);
+refs.form.addEventListener('change', readManualInputs);
 refs.profile.addEventListener('change', updateManualProfile);
 refs.sync.addEventListener('click', () => {
   connectBattery();
