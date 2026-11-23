@@ -272,3 +272,30 @@ body[data-power-mode="external"] .supply-external { color: var(--mode-color); ba
   .speed-strip { gap: 5px; }
   .speed-strip span { padding: 8px 2px; font-size: 9px; }
 }
+
+/* High-saturation reference backdrop: black field with red/amber frame bands and hazard diagonals. */
+body { position: relative; isolation: isolate; background: #050607; }
+body::after { content: ''; position: fixed; z-index: 0; inset: 0; pointer-events: none; opacity: .9; background:
+  linear-gradient(135deg, transparent 0 8%, var(--mode-color) 8.2% 10.4%, transparent 10.6% 100%),
+  linear-gradient(315deg, transparent 0 12%, var(--mode-color) 12.2% 14.2%, transparent 14.4% 100%),
+  repeating-linear-gradient(135deg, transparent 0 26px, rgba(255,255,255,.035) 27px 29px),
+  radial-gradient(ellipse at 6% 0%, var(--mode-glow), transparent 38%),
+  radial-gradient(ellipse at 100% 100%, var(--mode-glow), transparent 35%);
+}
+body[data-power-mode="external"]::after { background-color: #161105; }
+body[data-power-mode="internal"]::after { background-color: #130507; }
+.shell { position: relative; z-index: 1; }
+.topbar { border-bottom-color: var(--mode-color); }
+.brand-mark { background: var(--mode-color); }
+.alert-strip { border-width: 2px; border-color: var(--mode-color); background: linear-gradient(90deg, var(--mode-deep), rgba(0,0,0,.2)); }
+.reference-board::before { content: ''; display: block; height: 8px; border-bottom: 2px solid var(--mode-color); background: repeating-linear-gradient(135deg, var(--mode-color) 0 12px, #050607 12px 24px); }
+.speed-strip span { position: relative; overflow: hidden; }
+.speed-strip span::after { content: ''; position: absolute; inset: auto -20% -12px; height: 4px; background: var(--mode-color); transform: rotate(-7deg); opacity: .35; }
+.speed-strip .active-speed { box-shadow: 0 0 18px var(--mode-glow); }
+body[data-speed-mode="stop"] .speed-strip [data-speed="stop"]::after,
+body[data-speed-mode="slow"] .speed-strip [data-speed="slow"]::after,
+body[data-speed-mode="normal"] .speed-strip [data-speed="normal"]::after { opacity: 1; }
+
+@media (max-width: 700px) {
+  .reference-board::before { height: 6px; }
+}

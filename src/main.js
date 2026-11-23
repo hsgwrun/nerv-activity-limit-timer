@@ -94,7 +94,10 @@ app.innerHTML = `
           </div>
           <div class="board-bottom">
             <div class="speed-strip" aria-label="活動モード表示">
-              <span>STOP</span><span>SLOW</span><span class="active-speed">NORMAL</span><span>RACING</span>
+              <span data-speed="stop" title="外部電力で充電中">STOP</span>
+              <span data-speed="slow" title="省電力モード">SLOW</span>
+              <span data-speed="normal" title="通常運転">NORMAL</span>
+              <span data-speed="racing" title="高負荷状態">RACING</span>
             </div>
             <div class="danger-box">DANGER<br /><small>EMERGENCY</small></div>
           </div>
@@ -206,6 +209,7 @@ const refs = {
   alertTitle: document.querySelector('#alert-title'),
   alertDetail: document.querySelector('#alert-detail'),
   powerSourceChip: document.querySelector('#power-source-chip'),
+  speedItems: document.querySelectorAll('[data-speed]'),
   hours: document.querySelector('#hours-value'),
   countdown: document.querySelector('#countdown'),
   countdownStatus: document.querySelector('#countdown-status'),
@@ -299,6 +303,12 @@ function getAlertLevel() {
   return { title: 'STANDBY / ACTIVITY WITHIN LIMIT', detail: '端末は通常監視下にあります', className: 'normal' };
 }
 
+function getSpeedMode() {
+  if (state.charging) return 'stop';
+  if (state.level <= 20 || state.power <= 3) return 'slow';
+  return 'normal';
+}
+
 function render() {
   const level = clamp(state.level, 0, 100);
   const alert = getAlertLevel();
@@ -327,9 +337,12 @@ function render() {
   refs.manualStatus.textContent = state.source === 'battery-api' ? '自動同期中 / 手動補正可' : '手動入力モード';
   refs.apiFootnote.textContent = state.apiAvailable ? 'BATTERY API: CONNECTED' : 'BATTERY API: FALLBACK';
   refs.countdownProgress.style.width = `${clamp((state.remainingSeconds / Math.max(state.estimatedHours * 3600, 1)) * 100, 0, 100)}%`;
+  const speedMode = getSpeedMode();
+  refs.speedItems.forEach((item) => item.classList.toggle('active-speed', item.dataset.speed === speedMode));
 
   document.body.dataset.alert = alert.className;
   document.body.dataset.powerMode = state.charging ? 'external' : 'internal';
+  document.body.dataset.speedMode = speedMode;
 }
 
 function readManualInputs() {
