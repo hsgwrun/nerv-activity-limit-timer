@@ -284,32 +284,31 @@ const SEGMENT_MAP = {
 
 function updateSegmentDisplay(target, value) {
   const text = String(value);
-  const structure = text.replace(/\\./g, '');
-  if (!target.dataset.segmentReady || target.dataset.segmentStructure !== structure.replace(/\\d/g, '0')) {
+  const structure = text.split('.').join('');
+  const structureKey = [...structure].map((char) => char >= '0' && char <= '9' ? '0' : char).join('');
+  if (!target.dataset.segmentReady || target.dataset.segmentStructure !== structureKey) {
     target.innerHTML = structure.split('').map((char) => {
       if (char === ':') return '<span class="segment-colon" aria-hidden="true"><i></i><i></i></span>';
       return `<span class="segment-digit" aria-hidden="true">${'abcdefgdp'.split('').map((name) => `<i class="segment seg-${name}" data-segment="${name}"></i>`).join('')}</span>`;
     }).join('');
     target.dataset.segmentReady = 'true';
-    target.dataset.segmentStructure = structure.replace(/\\d/g, '0');
+    target.dataset.segmentStructure = structureKey;
   }
 
+  const digitCharacters = [...text].filter((char) => char >= '0' && char <= '9');
+  const dotPosition = text.indexOf('.');
+  const decimalAfter = dotPosition < 0
+    ? -1
+    : [...text.slice(0, dotPosition)].filter((char) => char >= '0' && char <= '9').length - 1;
   const digits = [...target.querySelectorAll('.segment-digit')];
-  let digitIndex = 0;
-  let decimalAfter = -1;
-  for (const char of text) {
-    if (char === '.') {
-      decimalAfter = digitIndex - 1;
-    } else if (/\\d/.test(char)) {
-      const digit = digits[digitIndex++];
-      const lit = SEGMENT_MAP[char] || '';
-      digit.querySelectorAll('.segment').forEach((segment) => {
-        const name = segment.dataset.segment;
-        segment.classList.toggle('is-lit', name === 'dp' ? decimalAfter === digitIndex - 1 : lit.includes(name));
-      });
-      digit.dataset.value = char;
-    }
-  }
+  digits.forEach((digit, index) => {
+    const lit = SEGMENT_MAP[digitCharacters[index]] || '';
+    digit.querySelectorAll('.segment').forEach((segment) => {
+      const name = segment.dataset.segment;
+      segment.classList.toggle('is-lit', name === 'dp' ? index === decimalAfter : lit.includes(name));
+    });
+    digit.dataset.value = digitCharacters[index] || '';
+  });
   target.setAttribute('aria-label', `予想活動限界時間 ${text}`);
 }
 
