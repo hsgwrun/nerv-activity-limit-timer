@@ -67,35 +67,38 @@ app.innerHTML = `
           <span class="live-tag"><span class="live-dot"></span>LIVE</span>
         </div>
 
-        <div class="mode-banner" aria-live="polite">
-          <div class="mode-banner-title">
-            <span class="mode-kicker">MAIN ENERGY SUPPLY SYSTEM</span>
-            <strong id="mode-label">内部電力</strong>
-          </div>
-          <div class="mode-banner-state">
-            <span id="mode-en">INTERNAL</span>
-            <small id="mode-note">端末バッテリーで稼働中</small>
-          </div>
-        </div>
-
-        <div class="hero-copy">
-          <p class="hero-kicker">ACTIVE TIME REMAINING / 予想活動限界時間</p>
-          <h2 id="limit-heading" class="limit-value"><span id="hours-value">0.000</span><small>H</small></h2>
-          <p class="hero-subline">現在の消費電力が継続すると仮定した場合</p>
-        </div>
-
-        <div class="countdown-wrap" aria-live="polite" aria-atomic="true">
-          <div class="countdown-label">
-            <span class="eyebrow">COUNTDOWN TO ACTIVITY LIMIT</span>
+        <div class="reference-board" aria-live="polite" aria-atomic="true">
+          <div class="board-topline">
+            <span>活動限界まで</span>
+            <span>ACTIVE TIME REMAINING</span>
             <span id="countdown-status">放電換算 / ACTIVE</span>
           </div>
-          <div class="countdown" id="countdown">00:00:00</div>
-          <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
-        </div>
-
-        <div class="hero-footer">
-          <div class="warning-chip"><span class="warning-triangle" aria-hidden="true">△</span> APPROXIMATE OUTPUT</div>
-          <p>活動限界はバッテリーの状態変化に応じて更新されます。</p>
+          <div class="board-main">
+            <div class="board-digits">
+              <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
+              <h2 id="limit-heading" class="limit-value"><span id="hours-value">0.000</span><small>H</small></h2>
+              <div class="countdown" id="countdown">00:00:00</div>
+              <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
+            </div>
+            <div class="board-side">
+              <div class="supply-card supply-internal">
+                <span>内部</span><strong>INTERNAL</strong>
+              </div>
+              <div class="supply-card supply-system">
+                <span>主電源供給システム</span><strong>MAIN ENERGY<br />SUPPLY SYSTEM</strong>
+              </div>
+              <div class="supply-card supply-external">
+                <span>外部</span><strong>EXTERNAL</strong>
+              </div>
+            </div>
+          </div>
+          <div class="board-bottom">
+            <div class="speed-strip" aria-label="活動モード表示">
+              <span>STOP</span><span>SLOW</span><span class="active-speed">NORMAL</span><span>RACING</span>
+            </div>
+            <div class="danger-box">DANGER<br /><small>EMERGENCY</small></div>
+          </div>
+          <p class="board-caption">現在の消費電力が継続すると仮定した場合 / APPROXIMATE OUTPUT</p>
         </div>
       </section>
 
@@ -206,9 +209,6 @@ const refs = {
   hours: document.querySelector('#hours-value'),
   countdown: document.querySelector('#countdown'),
   countdownStatus: document.querySelector('#countdown-status'),
-  modeLabel: document.querySelector('#mode-label'),
-  modeEn: document.querySelector('#mode-en'),
-  modeNote: document.querySelector('#mode-note'),
   countdownProgress: document.querySelector('#countdown-progress'),
   level: document.querySelector('#level-value'),
   ring: document.querySelector('#battery-ring'),
@@ -308,9 +308,6 @@ function render() {
   refs.hours.textContent = state.estimatedHours.toFixed(3);
   refs.countdown.textContent = formatTime(state.remainingSeconds);
   refs.countdownStatus.textContent = state.charging ? '充電中 / 放電換算' : '放電換算 / ACTIVE';
-  refs.modeLabel.textContent = state.charging ? '外部電力' : '内部電力';
-  refs.modeEn.textContent = state.charging ? 'EXTERNAL' : 'INTERNAL';
-  refs.modeNote.textContent = state.charging ? '外部電力供給 / 充電中' : '端末バッテリーで稼働中';
   refs.powerSourceChip.textContent = state.charging ? '外部電力 / EXTERNAL' : '内部電力 / INTERNAL';
   refs.level.textContent = Math.round(level);
   refs.ring.setAttribute('aria-label', `バッテリー残量 ${Math.round(level)}パーセント`);
