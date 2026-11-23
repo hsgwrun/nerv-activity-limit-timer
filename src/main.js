@@ -13,6 +13,7 @@ const state = {
   power: DEFAULTS.power,
   profile: DEFAULTS.profile,
   charging: false,
+  lowPowerMode: false,
   apiAvailable: false,
   source: 'manual',
   apiDischargingTime: null,
@@ -72,24 +73,25 @@ app.innerHTML = `
           <div class="board-topline">
             <span>活動限界まで</span>
             <span>ACTIVE TIME REMAINING</span>
-            <span id="countdown-status">放電換算 / ACTIVE</span>
+            <button class="low-power-toggle" id="low-power-toggle" type="button" aria-pressed="false">LOW POWER <strong id="low-power-state">OFF</strong></button>
           </div>
           <div class="board-main">
             <div class="board-digits">
               <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
               <h2 id="limit-heading" class="limit-value"><span id="activity-time-value">00:00:00.00</span></h2>
+              <div class="countdown-meta"><span id="countdown-status">放電換算 / INTERNAL POWER</span><span id="countdown-source">ESTIMATED</span></div>
               <div class="countdown" id="countdown">00:00:00</div>
               <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
             </div>
             <div class="board-side">
-              <div class="supply-card supply-internal">
-                <span>内部</span><strong>INTERNAL</strong>
+              <div class="supply-card supply-internal" id="supply-internal">
+                <span>内部</span><strong>INTERNAL</strong><i class="hazard-mark" aria-hidden="true"></i>
               </div>
               <div class="supply-card supply-system">
                 <span>主電源供給システム</span><strong>MAIN ENERGY<br />SUPPLY SYSTEM</strong>
               </div>
-              <div class="supply-card supply-external">
-                <span>外部</span><strong>EXTERNAL</strong>
+              <div class="supply-card supply-external" id="supply-external">
+                <span>外部</span><strong>EXTERNAL</strong><i class="hazard-mark" aria-hidden="true"></i>
               </div>
             </div>
           </div>
@@ -214,6 +216,7 @@ const refs = {
   activityTime: document.querySelector('#activity-time-value'),
   countdown: document.querySelector('#countdown'),
   countdownStatus: document.querySelector('#countdown-status'),
+  countdownSource: document.querySelector('#countdown-source'),
   countdownProgress: document.querySelector('#countdown-progress'),
   level: document.querySelector('#level-value'),
   ring: document.querySelector('#battery-ring'),
@@ -236,6 +239,10 @@ const refs = {
   capacityInput: document.querySelector('#capacity-input'),
   powerInput: document.querySelector('#power-input'),
   sync: document.querySelector('#sync-button'),
+  lowPowerToggle: document.querySelector('#low-power-toggle'),
+  lowPowerState: document.querySelector('#low-power-state'),
+  supplyInternal: document.querySelector('#supply-internal'),
+  supplyExternal: document.querySelector('#supply-external'),
 };
 
 const profiles = {
@@ -296,6 +303,7 @@ function calculate() {
   const hasApiTime = state.source === 'battery-api' && !state.charging && finitePositive(apiTime);
   const seconds = hasApiTime ? apiTime : calculateManualSeconds();
   state.remainingSeconds = seconds;
+  state.initialSeconds = seconds;
   state.estimatedHours = seconds / 3600;
   state.deadlineMs = Date.now() + (seconds * 1000);
   state.lastUpdated = Date.now();
@@ -316,7 +324,7 @@ function getAlertLevel() {
 
 function getSpeedMode() {
   if (state.charging) return 'stop';
-  if (state.level <= 20 || state.power <= 3) return 'slow';
+  if (state.lowPowerMode) return 'slow';
   return 'normal';
 }
 
@@ -324,11 +332,14 @@ function render() {
   const level = clamp(state.level, 0, 100);
   const alert = getAlertLevel();
   const confidence = deriveConfidence();
+  const speedMode = getSpeedMode();
+  const powerMode = state.charging ? 'external' : 'internal';
   const ringColor = level <= 15 ? '#ff3f3f' : level <= 35 ? '#f7b955' : '#ff5b55';
 
   refs.activityTime.textContent = formatActivityTime(state.remainingSeconds);
   refs.countdown.textContent = formatActivityTime(state.remainingSeconds);
-  refs.countdownStatus.textContent = state.charging ? '充電中 / 放電換算' : '放電換算 / ACTIVE';
+  refs.countdownStatus.textContent = state.charging ? '外部電力 / EXTERNAL POWER' : state.lowPowerMode ? '低電力モード / LOW POWER' : '内部電力 / INTERNAL POWER';
+  refs.countdownSource.textContent = state.source === 'battery-api' ? 'BATTERY API' : 'MANUAL ESTIMATE';
   refs.powerSourceChip.textContent = state.charging ? '外部電力 / EXTERNAL' : '内部電力 / INTERNAL';
   refs.level.textContent = Math.round(level);
   refs.ring.setAttribute('aria-label', `バッテリー残量 ${Math.round(level)}パーセント`);
@@ -348,8 +359,17 @@ function render() {
   refs.manualStatus.textContent = state.source === 'battery-api' ? '自動同期中 / 手動補正可' : '手動入力モード';
   refs.apiFootnote.textContent = state.apiAvailable ? 'BATTERY API: CONNECTED' : 'BATTERY API: FALLBACK';
   refs.countdownProgress.style.width = `${clamp((state.remainingSeconds / Math.max(state.estimatedHours * 3600, 1)) * 100, 0, 100)}%`;
-  const speedMode = getSpeedMode();
-  refs.speedItems.forEach((item) => item.classList.toggle('active-speed', item.dataset.speed === speedMode));
+  refs.lowPowerToggle.setAttribute('aria-pressed', String(state.lowPowerMode));
+  refs.lowPowerToggle.classList.toggle('is-on', state.lowPowerMode);
+  refs.lowPowerState.textContent = state.lowPowerMode ? 'ON' : 'OFF';
+  refs.speedItems.forEach((item) => {
+    const active = item.dataset.speed === speedMode;
+    item.classList.toggle('active-speed', active);
+    if (active) item.setAttribute('aria-current', 'true');
+    else item.removeAttribute('aria-current');
+  });
+  refs.supplyInternal.classList.toggle('is-active', powerMode === 'internal');
+  refs.supplyExternal.classList.toggle('is-active', powerMode === 'external');
 
   document.body.dataset.alert = alert.className;
   document.body.dataset.powerMode = state.charging ? 'external' : 'internal';
@@ -431,6 +451,7 @@ function tick() {
   const alert = getAlertLevel();
   refs.activityTime.textContent = formatActivityTime(state.remainingSeconds);
   refs.countdown.textContent = formatActivityTime(state.remainingSeconds);
+  refs.countdownProgress.style.width = `${clamp((state.remainingSeconds / Math.max(state.initialSeconds, 1)) * 100, 0, 100)}%`;
   refs.alertTitle.textContent = alert.title;
   refs.alertDetail.textContent = alert.detail;
   document.body.dataset.alert = alert.className;
@@ -442,6 +463,11 @@ refs.profile.addEventListener('change', updateManualProfile);
 refs.sync.addEventListener('click', () => {
   connectBattery();
   setAnnouncer('端末状態の再同期を開始しました。');
+});
+refs.lowPowerToggle.addEventListener('click', () => {
+  state.lowPowerMode = !state.lowPowerMode;
+  render();
+  setAnnouncer(state.lowPowerMode ? '低電力モードをONにしました。' : '低電力モードをOFFにしました。');
 });
 
 setInterval(() => {
