@@ -78,7 +78,7 @@ app.innerHTML = `
           <div class="board-main">
             <div class="board-digits">
               <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
-              <div id="limit-heading" class="segment-display" role="img" aria-label="予想活動限界時間"><span id="activity-time-value" class="segment-readout">00:00:00.00</span></div>
+              <div id="limit-heading" class="segment-display" role="img" aria-label="予想活動限界時間"></div>
               <div class="countdown-meta"><span id="countdown-status">放電換算 / INTERNAL POWER</span><span id="countdown-source">ESTIMATED</span></div>
               <div class="countdown" id="countdown">00:00:00</div>
               <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
@@ -213,7 +213,7 @@ const refs = {
   alertDetail: document.querySelector('#alert-detail'),
   powerSourceChip: document.querySelector('#power-source-chip'),
   speedItems: document.querySelectorAll('[data-speed]'),
-  activityTime: document.querySelector('#activity-time-value'),
+  activityTime: document.querySelector('#limit-heading'),
   countdown: document.querySelector('#countdown'),
   countdownStatus: document.querySelector('#countdown-status'),
   countdownSource: document.querySelector('#countdown-source'),
