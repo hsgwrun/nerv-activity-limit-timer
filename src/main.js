@@ -77,7 +77,7 @@ app.innerHTML = `
           <div class="board-main">
             <div class="board-digits">
               <p class="board-kicker">予想活動限界時間 / SHUTDOWN WINDOW</p>
-              <h2 id="limit-heading" class="limit-value"><span id="activity-time-value">00時間00分00秒00</span></h2>
+              <h2 id="limit-heading" class="limit-value"><span id="activity-time-value">00:00:00.00</span></h2>
               <div class="countdown" id="countdown">00:00:00</div>
               <div class="countdown-bar" aria-hidden="true"><span id="countdown-progress"></span></div>
             </div>
@@ -267,7 +267,7 @@ function formatActivityTime(seconds) {
   const minutes = Math.floor((safe % 3600) / 60);
   const wholeSeconds = Math.floor(safe % 60);
   const hundredths = Math.floor((safe - Math.floor(safe)) * 100);
-  return `${String(hours).padStart(2, '0')}時間${String(minutes).padStart(2, '0')}分${String(wholeSeconds).padStart(2, '0')}秒${String(hundredths).padStart(2, '0')}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
 }
 
 function formatDuration(seconds) {
