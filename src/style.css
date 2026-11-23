@@ -451,3 +451,27 @@ body[data-power-mode="external"] .supply-card.supply-internal strong{color:#5140
 @media(max-width:700px) and (orientation:landscape){
   .segment-display{font-size:clamp(54px,15vh,100px)}
 }
+
+
+/* FIX: keep the instrument front-facing and readable in portrait mode. */
+.reference-board {
+  width: 100%;
+  margin-left: 0;
+  transform: none !important;
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  body { overflow: auto; }
+  .shell {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    min-height: 100svh;
+    transform: none;
+    transform-origin: initial;
+  }
+  .hero-panel, .reference-board { min-height: 100svh; }
+}
+@media (max-width: 700px) {
+  .reference-board { width: 100%; margin-left: 0; transform: none !important; }
+}
